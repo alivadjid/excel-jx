@@ -112,4 +112,4 @@ module.exports = {
   },
 }
 
-console.log('module hot', module)
+
