@@ -1,18 +1,50 @@
 const path = require('path')
-const { CleanWebpackPlugin } = require('clean-webpack-plugin')
+const {CleanWebpackPlugin} = require('clean-webpack-plugin')
 const HTMLWebpackPlugin = require('html-webpack-plugin')
-const CopyPlugin = require("copy-webpack-plugin")
+const CopyPlugin = require('copy-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin')
+const webpack = require('webpack')
 
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = !isProd
 
+const filename = ext => isDev ? `bundle.${ext}` : `bundle.[hash].${ext}`
+
+// const plugins = [
+//   new MiniCssExtractPlugin({
+//     // Options similar to the same options in webpackOptions.output
+//     // both options are optional
+//     filename: isProd ? '[name].css' : '[name].[hash].css',
+//   }),
+// ];
+//
+// if (isProd) {
+//   // only enable hot in development
+//   plugins.push(new webpack.HotModuleReplacementPlugin());
+// }
+
+const jsloaders = () => {
+  const loaders = [
+    {
+      loader: 'babel-loader',
+      options: {
+        presets: ['@babel/preset-env']
+      }
+    }
+  ]
+  if (isDev) {
+    loaders.push('eslint-loader')
+  }
+  return loaders
+}
+
+
 module.exports = {
   context: path.resolve(__dirname, 'src'),
   mode: 'development',
-  entry: './index.js',
+  entry: ['@babel/polyfill','./index.js'],
   output: {
-    filename: 'bundle.[hash].js',
+    filename: filename('js'),
     path: path.resolve(__dirname, 'dist')
   },
   resolve: {
@@ -24,10 +56,19 @@ module.exports = {
       '@core': path.resolve(__dirname, 'src/core')
     }
   },
+  devtool: isDev ? 'source-map' : false,
+  devServer: {
+    port: 4500,
+    hot: true
+},
   plugins: [
     new CleanWebpackPlugin(),
     new HTMLWebpackPlugin({
-      template: 'index.html'
+      template: 'index.html',
+      minify: {
+        removeComments: isProd,
+        collapseWhitespace: isProd
+      }
     }),
     new CopyPlugin({
       patterns: [
@@ -38,15 +79,25 @@ module.exports = {
       ],
     }),
     new MiniCssExtractPlugin({
-      filename: 'bundle.[hash].css'
+      filename: filename('css')
     }),
+    isDev && new webpack.HotModuleReplacementPlugin(),
+
   ],
   module: {
     rules: [
       {
         test: /\.s[ac]ss$/i,
         use: [
-          MiniCssExtractPlugin.loader,
+          {
+            loader: MiniCssExtractPlugin.loader,
+            options: {
+              modules: {
+
+              },
+            },
+          },
+          //MiniCssExtractPlugin.loader,
           'css-loader',
           'sass-loader',
         ],
@@ -54,13 +105,11 @@ module.exports = {
       {
         test: /\.m?js$/,
         exclude: /node_modules/,
-        use: {
-          loader: "babel-loader",
-          options: {
-            presets: ['@babel/preset-env']
-          }
-        }
+        use: jsloaders()
+
       }
     ]
   },
 }
+
+console.log('module hot', module)

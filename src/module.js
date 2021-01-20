@@ -1,9 +1,10 @@
 
 
-console.log('modulejs')
+console.log('Modulejs')
 
 async function start() {
-  await Promise.resolve()
+  return await Promise.resolve('async working!1')
 }
 
-start()
+start().then(console.log)
+
